@@ -1,3 +1,3 @@
-export function helloworld(){
+const helloworld =() => {
     return 'hello webpack'
 }

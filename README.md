@@ -102,3 +102,181 @@ module.exports = {
 }
 ```
 ### 1.5 -> 最后呀只心概念mode
+Mode的内置函数功能
+|选项|描述|
+|----|----|
+|development|设置process.env.NODE_ENV的值为development . 开启NamedChunksPlugin和NamedModulesPlugin|
+|production|设置process.env.NODE_ENV的值为production.开启FlagDependencyUsagePlugin，FlagincludedChunksPlugin，OccurrenceOrderPlugin,SideEddectsFlagPlugin和TerserPlugin|
+|none|不开启任何优化|
+
+## 2 常用插件的使用
+
+### 2.1 babel-loader
+
+babel的配置文件是: .babelrc
+首先回顾 1-3 里面的概念， webpack本来只支持.js & .json俩中文件，活着es6，es7中的一些新语法，浏览器也不支持，所以需要babel来把他们转成浏览器认识的语言
+ok ， 再总结下，babel只负责转换文件，webpack 负责转换成浏览器认识的语言
+
+anyway，所以怎么配置呢babelrc文件  其实就是babel run come
+里面配置reset ---> 预设配置
+配置了babel  就可以编译es6一些新语法，可以编译jsx等等
+```javascript
+// .babelrc 配置 这样就支持转化新语法特性和react语法解析转化
+{
+    "presets":[
+        "@babel/preset-env",
+        "@babel/preset-react"
+    ],
+}  
+```
+
+
+```javascript
+module.exports = {
+    mode: 'production',
+    entry: {
+        index:'./src/index.js',
+        search:'./src/search.js'
+    },
+    output: {
+        path:path.resolve(__dirname,'dist'),
+        filename: '[name].js'
+    },
+    module: {
+        rules: [
+            {test:/\.test$/,use:'raw-loaders'},
+            //这里就是babel-loader
+            {test:/\.js$/,use:'babel-loader'}
+        ]
+    }
+}
+```
+
+### 2.2 css-loader  less-loader file-loader
+```javascript
+module: {
+    rules: [
+        {test:/\.test$/,use:'raw-loaders'},
+        //这里就是babel-loader
+        {test:/\.js$/,use:'babel-loader'},
+        {test:/.(png|jpg|gif|jpeg)$/,use:'file-loader'},
+        // style-loader用来讲style插入html，css-loader屎用来解析css，它是链式调用，从右到左，所以正确写法是style再先，css再后
+        {test:/\.css$/,use:[
+            'style-loader',
+            'css-loader'
+        ]},
+        {test:/.(png|jpg|gif|jpeg)$/,use:'file-loader'},
+
+
+    ]
+}
+
+```
+
+## 3 webpack 的文件监听
+    倆种方式
+        -> 启动webpack命令时，带上--watch参数
+        ->在配置webpack.config.js 中设置watch: true
+
+    上菜
+```javascript
+module: {
+    rules: [
+        {test:/\.test$/,use:'raw-loaders'},
+        //这里就是babel-loader
+        {test:/\.js$/,use:'babel-loader'},
+        {test:/.(png|jpg|gif|jpeg)$/,use:'file-loader'},
+        // style-loader用来讲style插入html，css-loader屎用来解析css，它是链式调用，从右到左，所以正确写法是style再先，css再后
+        {test:/\.css$/,use:[
+            'style-loader',
+            'css-loader'
+        ]},
+        {test:/.(png|jpg|gif|jpeg)$/,use:'file-loader'},
+    ]，
+    //默认时false ， 只有开启时，wathchOptions才有意义
+    watch:true.
+    watchOptions:{
+        //可以忽略特定文件
+        ignored:/node_mudules/,
+        //监听到变化后等300ms再执行
+        aggregateTimeout:300,
+        //判读啊你文件是否发生变化时通过不停询问系统指定文件有没有变化实现的，默认美妙询问1000次
+        poll:1000
+    }
+}
+```
+
+但是这种方式有权限，每次跟新需要浏览器刷新，而且相对WDS 会更慢，因为watch 回把文件放到磁盘上，但是我们平常使用的webpack-dev-server会更快，首先不需要浏览器刷新，然后他的文件都是保存在内存上的，所以更快。
+
+## wenpack 中的webpack-dev-server 基本使用和热更新
+  ->WDS 不刷新浏览器
+  ->不输出文件 而是放到内存中
+
+  一般WDS需要配合webpack.HotMoudleReplacementPlugin配合使用
+  ```javascript
+  module.exports = {
+    mode: 'production',
+    entry: {
+        index:'./src/index.js',
+        search:'./src/search.js'
+    },
+    output: {
+        path:path.resolve(__dirname,'dist'),
+        filename: '[name].js'
+    },
+    module: {
+        rules: [
+            {test:/\.test$/,use:'raw-loaders'},
+            //这里就是babel-loader
+            {test:/\.js$/,use:'babel-loader'}
+        ]
+    },
+    plugins:[
+        new webpack.HotModuleReplacementPlugin()
+    ],
+    devServer:{
+        // contentBase:'./dist',  // 垃圾教程 这里contentbase 已经弃用看
+        // 应该是static
+        static: './dist'
+        hot:true
+    },
+    mode: "development"
+}
+  ```
+## 4 webpack 文件指纹  hash chunckhash contenthash
+太恶心了 不想看 pass
+
+## 5 webpack代码的压缩
+### 5.1 js文件的压缩
+使用uglifyjs-webpack-plugin
+### 5.2 css文件的压缩
+optimize-css-assets-webpack-plugin
+同时要安装预处理器 csssnano
+### 5.2  html文件的压缩
+修改html-webpack-plugin，设置压缩参数 
+
+**总归了解webpack的plugin可以把css，js，html压缩成更小体积的文件就可以了**
+
+
+# webpack的高级用法 ok
+-----> 如何清理output构建目录
+ ->1 . 通过npm scripts清理目录
+    rm -rf ./dist && webpack
+    rimraf ./dist && webpack
+
+并。。。不。。。。优。。。雅
+
+所以我们要用 clean-webpack-plugin
+-> 默认回删除output指定的输出目录
+
+
+## autoPrefixer  配合postcss-loader 适配浏览器
+可以自动修复因为不痛浏览器不捅的情况下，css针对浏览器的前缀
+
+## 优化
+tree-shaking
+```js
+    if(false){  //永远不会被用到  直接抹杀
+        console.log(123)
+    }
+```·
